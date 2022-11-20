@@ -3,10 +3,12 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"log"
+	"net/http"
 	"time"
 )
 
 type User struct {
+	Email         string    `json:"email"`
 	FirstName     string    `json:"first_name"`
 	LastName      string    `json:"last_name"`
 	Gender        string    `json:"gender"`
@@ -40,8 +42,44 @@ type Address struct {
 	PostalCode int32  `json:"postal_code"`
 }
 
+type responseMessage struct {
+	Message string `json:"message"`
+}
+
+var (
+	users = make(map[string]User)
+)
+
 func main() {
 	server := gin.New()
+	server.POST("/users", func(context *gin.Context) {
+		var user User
+		err := context.ShouldBindJSON(&user)
+		if err != nil {
+			log.Println("unable to parse the payload ", err)
+			context.JSON(400, map[string]string{
+				"message": err.Error(),
+			})
+			return
+		}
+
+		// user is already existed
+		_, isExists := users[user.Email]
+		if isExists {
+			context.JSON(http.StatusConflict, map[string]string{
+				"message": "user already exist",
+			})
+			return
+		}
+
+		// create the user
+		users[user.Email] = user
+
+		// return success response
+		context.JSON(http.StatusOK, map[string]string{
+			"message": "user created",
+		})
+	})
 	err := server.Run()
 	if err != nil {
 		log.Println("unable to server :", err)
