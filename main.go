@@ -80,6 +80,17 @@ func main() {
 			"message": "user created",
 		})
 	})
+	server.GET("/users/:email", func(context *gin.Context) {
+		email := context.Param("email")
+		user, isExists := users[email]
+		if !isExists {
+			context.JSON(http.StatusNotFound, map[string]string{
+				"message": "user not found",
+			})
+			return
+		}
+		context.JSON(http.StatusOK, user)
+	})
 	err := server.Run()
 	if err != nil {
 		log.Println("unable to server :", err)
