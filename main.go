@@ -50,6 +50,47 @@ var (
 	users = make(map[string]User)
 )
 
+type Plan struct {
+	Name     string
+	No       int
+	Policies []Policy
+}
+
+var (
+	plans = []Plan{
+		{
+			Name: "Super Health Plan",
+			No:   1234,
+			Policies: []Policy{
+				{
+					ID:            "2345",
+					Name:          "whole body",
+					Amount:        235.10,
+					TimePeriod:    time.Now(),
+					EMI:           5,
+					Status:        "Inactive",
+					TotalCoverage: 7,
+				},
+			},
+		},
+		{
+			Name: "Classic Health Plan",
+			No:   4567,
+			Policies: []Policy{
+				{
+					ID:            "7892",
+					Name:          "Policy for Eyes",
+					Amount:        835.10,
+					TimePeriod:    time.Now(),
+					EMI:           8,
+					Status:        "Active",
+					TotalCoverage: 5,
+				},
+			},
+		},
+	}
+)
+
 func main() {
 	server := gin.New()
 	server.POST("/users", func(context *gin.Context) {
@@ -80,6 +121,11 @@ func main() {
 			"message": "user created",
 		})
 	})
+
+	server.GET("/users/all-plans", func(context *gin.Context) {
+		context.JSON(http.StatusOK, plans)
+	})
+
 	err := server.Run()
 	if err != nil {
 		log.Println("unable to server :", err)
