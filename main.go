@@ -2,19 +2,27 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"log"
 	"net/http"
+	"net/mail"
 	"time"
 )
 
+var (
+	users = make(map[string]User)
+)
+
+var fieldValidator *validator.Validate
+
 type User struct {
-	Email         string    `json:"email"`
-	FirstName     string    `json:"first_name"`
-	LastName      string    `json:"last_name"`
-	Gender        string    `json:"gender"`
-	DateOfBirth   time.Time `json:"date_of_birth"`
-	Age           int       `json:"age"`
-	MartialStatus string    `json:"martial_status"`
+	Email         string    `json:"email" validate:"required,email"`
+	FirstName     string    `json:"first_name" validate:"required,alpha"`
+	LastName      string    `json:"last_name" validate:"required,alpha"`
+	Gender        string    `json:"gender" validate:"required,oneof=M F"`
+	DateOfBirth   time.Time `json:"date_of_birth" validate:"required,"`
+	Age           int       `json:"age" validate:"required,min=10,max=60 validateDOB"`
+	MartialStatus string    `json:"martial_status" validate:"required,oneof=single married,divorce,widow"`
 	Policy        []Policy  `json:"policy"`
 	Address       []Address `json:"address"`
 	Premium       Premium   `json:"premium"`
@@ -46,9 +54,22 @@ type responseMessage struct {
 	Message string `json:"message"`
 }
 
-var (
-	users = make(map[string]User)
-)
+func init() {
+	fieldValidator = validator.New()
+	_ = fieldValidator.RegisterValidation("email", func(fl validator.FieldLevel) bool {
+		email := fl.Field().Interface().(string)
+		_, err := mail.ParseAddress(email)
+		return err == nil
+	})
+	_ = fieldValidator.RegisterValidation("validateDOB", func(fl validator.FieldLevel) bool {
+		age := fl.Field().Interface().(int)
+		user := fl.Parent().Interface().(User)
+		since := time.Since(user.DateOfBirth)
+		days := since.Hours() / 24
+		year := int(days / 365)
+		return year == age
+	})
+}
 
 func main() {
 	server := gin.New()
