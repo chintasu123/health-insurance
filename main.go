@@ -9,6 +9,18 @@ import (
 	"time"
 )
 
+// /users/suvani@gmail.com/policy [POST]
+//  should bind uri
+// 	do field level validations for uri struct
+//  should bind body
+//  do field level validations for json struct
+//  check if given email is exists or not in the users map
+//  if not throw not found error
+//  check if the policy is exist in the system
+//  add the policy from request to the user list of policy
+//  update the user back to the map
+//  return 201 policy created message
+
 var (
 	users = make(map[string]User)
 )
@@ -23,16 +35,16 @@ type User struct {
 	DateOfBirth   time.Time `json:"date_of_birth" validate:"required"`
 	Age           int       `json:"age" validate:"required,min=10,max=60,validateDOB"`
 	MartialStatus string    `json:"martial_status" validate:"required,oneof=single married divorce widow"`
-	Policy        []Policy  `json:"policy"`
+	Policies      []Policy  `json:"policies"`
 	Address       []Address `json:"address"`
 	Premium       Premium   `json:"premium"`
 }
 
 type Policy struct {
-	ID            string    `json:"id"`
-	Name          string    `json:"name"`
-	Amount        float64   `json:"amount"`
-	TimePeriod    time.Time `json:"time_period"`
+	ID            string    `json:"id" validate:"required"`
+	Name          string    `json:"name" validate:"required,min=4,max=20"`
+	Amount        float64   `json:"amount" validate:"required"`
+	TimePeriod    time.Time `json:"time_period" validate:"required"`
 	EMI           int       `json:"emi"`
 	Status        string    `json:"status"`
 	TotalCoverage int       `json:"total_coverage"`
@@ -52,6 +64,9 @@ type Address struct {
 
 type responseMessage struct {
 	Message string `json:"message"`
+}
+type EmailURI struct {
+	Email string `uri:"email" validate:"required,email"`
 }
 
 func init() {
@@ -118,6 +133,59 @@ func main() {
 			return
 		}
 		context.JSON(http.StatusOK, user)
+	})
+
+	server.POST("/users/:email/policy", func(context *gin.Context) {
+		var policy Policy
+		var emailURI EmailURI
+		err := context.ShouldBindJSON(&policy)
+		if err != nil {
+			log.Println("unable to parse the payload ", err)
+			context.JSON(400, map[string]string{
+				"message": err.Error(),
+			})
+			return
+		}
+		err = fieldValidator.Struct(policy)
+		if err != nil {
+			context.JSON(400, map[string]string{
+				"message": err.Error(),
+			})
+			return
+		}
+		err = context.ShouldBindUri(&emailURI)
+		if err != nil {
+			log.Println("unable to parse the payload ", err)
+			context.JSON(400, map[string]string{
+				"message": err.Error(),
+			})
+			return
+		}
+		err = fieldValidator.Struct(emailURI)
+		if err != nil {
+			context.JSON(400, map[string]string{
+				"message": err.Error(),
+			})
+			return
+		}
+		// user is already existed
+		user, isExists := users[emailURI.Email]
+		if !isExists {
+			context.JSON(http.StatusNotFound, map[string]string{
+				"message": "user not found",
+			})
+			return
+		}
+
+		user.Policies = append(user.Policies, policy)
+
+		// update the user
+		users[user.Email] = user
+
+		// return success response
+		context.JSON(http.StatusOK, map[string]string{
+			"message": "policy created",
+		})
 	})
 	err := server.Run()
 	if err != nil {
