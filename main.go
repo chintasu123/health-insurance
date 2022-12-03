@@ -46,6 +46,15 @@ type responseMessage struct {
 	Message string `json:"message"`
 }
 
+type AvailablePolicy struct {
+	ID            string  `json:"id"`
+	Name          string  `json:"name"`
+	MinAmount     float64 `json:"min_amount"`
+	MaxAmount     float64 `json:"max_amount"`
+	MinTimePeriod int     `json:"min_time_period"`
+	MaxTimePeriod int     `json:"max_time_period"`
+}
+
 var (
 	users = make(map[string]User)
 )
@@ -53,7 +62,7 @@ var (
 type Plan struct {
 	Name     string
 	No       int
-	Policies []Policy
+	Policies []AvailablePolicy
 }
 
 var (
@@ -61,30 +70,28 @@ var (
 		{
 			Name: "Super Health Plan",
 			No:   1234,
-			Policies: []Policy{
+			Policies: []AvailablePolicy{
 				{
 					ID:            "2345",
 					Name:          "whole body",
-					Amount:        235.10,
-					TimePeriod:    time.Now(),
-					EMI:           5,
-					Status:        "Inactive",
-					TotalCoverage: 7,
+					MinAmount:     100000.00,
+					MaxAmount:     250000.00,
+					MinTimePeriod: 12,
+					MaxTimePeriod: 24,
 				},
 			},
 		},
 		{
 			Name: "Classic Health Plan",
 			No:   4567,
-			Policies: []Policy{
+			Policies: []AvailablePolicy{
 				{
 					ID:            "7892",
 					Name:          "Policy for Eyes",
-					Amount:        835.10,
-					TimePeriod:    time.Now(),
-					EMI:           8,
-					Status:        "Active",
-					TotalCoverage: 5,
+					MinAmount:     110000.00,
+					MaxAmount:     260000.00,
+					MinTimePeriod: 10,
+					MaxTimePeriod: 23,
 				},
 			},
 		},
