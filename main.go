@@ -46,8 +46,56 @@ type responseMessage struct {
 	Message string `json:"message"`
 }
 
+type AvailablePolicy struct {
+	ID            string  `json:"id"`
+	Name          string  `json:"name"`
+	MinAmount     float64 `json:"min_amount"`
+	MaxAmount     float64 `json:"max_amount"`
+	MinTimePeriod int     `json:"min_time_period"`
+	MaxTimePeriod int     `json:"max_time_period"`
+}
+
 var (
 	users = make(map[string]User)
+)
+
+type Plan struct {
+	Name     string            `json:"name"`
+	No       int               `json:"no"`
+	Policies []AvailablePolicy `json:"policies"`
+}
+
+var (
+	plans = []Plan{
+		{
+			Name: "Super Health Plan",
+			No:   1234,
+			Policies: []AvailablePolicy{
+				{
+					ID:            "2345",
+					Name:          "whole body",
+					MinAmount:     100000.00,
+					MaxAmount:     250000.00,
+					MinTimePeriod: 12,
+					MaxTimePeriod: 24,
+				},
+			},
+		},
+		{
+			Name: "Classic Health Plan",
+			No:   4567,
+			Policies: []AvailablePolicy{
+				{
+					ID:            "7892",
+					Name:          "Policy for Eyes",
+					MinAmount:     110000.00,
+					MaxAmount:     260000.00,
+					MinTimePeriod: 10,
+					MaxTimePeriod: 23,
+				},
+			},
+		},
+	}
 )
 
 func main() {
@@ -80,6 +128,11 @@ func main() {
 			"message": "user created",
 		})
 	})
+
+	server.GET("/users/all-plans", func(context *gin.Context) {
+		context.JSON(http.StatusOK, plans)
+	})
+
 	err := server.Run()
 	if err != nil {
 		log.Println("unable to server :", err)
