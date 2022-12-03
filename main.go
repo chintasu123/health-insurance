@@ -20,9 +20,9 @@ type User struct {
 	FirstName     string    `json:"first_name" validate:"required,alpha"`
 	LastName      string    `json:"last_name" validate:"required,alpha"`
 	Gender        string    `json:"gender" validate:"required,oneof=M F"`
-	DateOfBirth   time.Time `json:"date_of_birth" validate:"required,"`
-	Age           int       `json:"age" validate:"required,min=10,max=60 validateDOB"`
-	MartialStatus string    `json:"martial_status" validate:"required,oneof=single married,divorce,widow"`
+	DateOfBirth   time.Time `json:"date_of_birth" validate:"required"`
+	Age           int       `json:"age" validate:"required,min=10,max=60,validateDOB"`
+	MartialStatus string    `json:"martial_status" validate:"required,oneof=single married divorce widow"`
 	Policy        []Policy  `json:"policy"`
 	Address       []Address `json:"address"`
 	Premium       Premium   `json:"premium"`
@@ -78,6 +78,13 @@ func main() {
 		err := context.ShouldBindJSON(&user)
 		if err != nil {
 			log.Println("unable to parse the payload ", err)
+			context.JSON(400, map[string]string{
+				"message": err.Error(),
+			})
+			return
+		}
+		err = fieldValidator.Struct(user)
+		if err != nil {
 			context.JSON(400, map[string]string{
 				"message": err.Error(),
 			})
