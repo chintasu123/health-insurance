@@ -60,9 +60,9 @@ var (
 )
 
 type Plan struct {
-	Name     string
-	No       int
-	Policies []AvailablePolicy
+	Name     string            `json:"name"`
+	No       int               `json:"no"`
+	Policies []AvailablePolicy `json:"policies"`
 }
 
 var (
