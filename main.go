@@ -230,6 +230,23 @@ func main() {
 			return
 		}
 
+		var isPlanPresent bool
+		for _, plan := range plans {
+			for _, availablePolicy := range plan.Policies {
+				if availablePolicy.ID == policy.ID {
+					isPlanPresent = true
+					break
+				}
+			}
+		}
+		if !isPlanPresent {
+			log.Println("Policy not found")
+			context.JSON(http.StatusNotFound, map[string]string{
+				"message": "policy not found",
+			})
+			return
+		}
+
 		user.Policies = append(user.Policies, policy)
 
 		// update the user
