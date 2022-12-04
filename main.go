@@ -37,7 +37,6 @@ type User struct {
 	MartialStatus string    `json:"martial_status" validate:"required,oneof=single married divorce widow"`
 	Policies      []Policy  `json:"policies"`
 	Address       []Address `json:"address"`
-	Premium       Premium   `json:"premium"`
 }
 
 type Status string
@@ -76,7 +75,7 @@ const (
 //	4. status - pending
 
 // pay first emi
-// /users/:email/policy/:1/pay [POST]
+// /users/:email/policy/:unique_identifier/pay [POST]
 // should bind request body
 // do validate request body
 // should bind URI request
@@ -97,17 +96,26 @@ const (
 //valid till = > curernt dat + 14 months // calculated field
 
 type Policy struct {
-	UniqueIdentifier int         `json:"unique_identifier"`
-	ID               string      `json:"id" validate:"required"`
-	Name             string      `json:"name" validate:"required,min=4,max=20"`
-	ValidTill        time.Time   `json:"time_period" validate:"required"`
-	Months           int         `json:"months" validate:"required"`
-	EMIAmount        int         `json:"emi_amount" validate:"required"`
-	Status           Status      `json:"status" validate:"required"`
-	TotalCoverage    int         `json:"total_coverage" validate:"required"`
-	Premium          float64     `json:"premium" validate:"required"`
-	Frequency        int         `json:"frequency" validate:"required"`
-	Beneficiary      Beneficiary `json:"beneficiary" validate:"required"`
+	UniqueIdentifier int          `json:"unique_identifier"`
+	ID               string       `json:"id" validate:"required"`
+	Name             string       `json:"name" validate:"required,min=4,max=20"`
+	ValidTill        time.Time    `json:"time_period"`
+	Months           int          `json:"months" validate:"required"`
+	EMIAmount        float64      `json:"emi_amount"`
+	Status           Status       `json:"status"`
+	TotalCoverage    float64      `json:"total_coverage"`
+	Premium          float64      `json:"premium" validate:"required,max=1000000000"`
+	Frequency        int          `json:"frequency" validate:"required"`
+	Beneficiary      Beneficiary  `json:"beneficiary" validate:"required"`
+	Illustration     []EMIPayment `json:"illustration"`
+}
+
+type EMIPayment struct {
+	Amount      float64   `json:"amount"`
+	DateToPay   time.Time `json:"date_to_pay"`
+	TotalAmount float64   `json:"total_amount"`
+	PaidDate    time.Time `json:"paid_date"`
+	Status      string    `json:"status"`
 }
 
 type Beneficiary struct {
@@ -296,10 +304,12 @@ func main() {
 		}
 
 		var isPlanPresent bool
+		var selectedPolicy AvailablePolicy
 		for _, plan := range plans {
 			for _, availablePolicy := range plan.Policies {
 				if availablePolicy.ID == policy.ID {
 					isPlanPresent = true
+					selectedPolicy = availablePolicy
 					break
 				}
 			}
@@ -310,6 +320,38 @@ func main() {
 				"message": "policy not found",
 			})
 			return
+		}
+		if !(policy.Premium >= selectedPolicy.MinAmount && policy.Premium <= selectedPolicy.MaxAmount) {
+			log.Println("Not valid Policy")
+			context.JSON(http.StatusBadRequest, map[string]string{
+				"message": "Premium Amount is not in range",
+			})
+			return
+		}
+		if !(policy.Months >= selectedPolicy.MinTimePeriod && policy.Months <= selectedPolicy.MaxTimePeriod) {
+			log.Println("Not valid Policy")
+			context.JSON(http.StatusBadRequest, map[string]string{
+				"message": "Premium TimePeriod is not in range",
+			})
+			return
+		}
+
+		policy.UniqueIdentifier = len(user.Policies) + 1
+
+		policy.EMIAmount = float64(policy.Frequency) * (policy.Premium / float64(policy.Months))
+		policy.ValidTill = time.Now().AddDate(0, policy.Months, 0)
+		policy.Status = Initiated
+
+		policy.TotalCoverage = policy.Premium * 0.3
+		var sum float64 = 0
+		for i := 0; i < policy.Frequency; i++ {
+			sum = sum + policy.EMIAmount
+			policy.Illustration = append(policy.Illustration, EMIPayment{
+				Amount:      policy.EMIAmount,
+				DateToPay:   time.Now().AddDate(0, policy.Frequency*i, 0),
+				TotalAmount: sum,
+				Status:      "Pending",
+			})
 		}
 
 		user.Policies = append(user.Policies, policy)
