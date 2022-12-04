@@ -40,14 +40,79 @@ type User struct {
 	Premium       Premium   `json:"premium"`
 }
 
+type Status string
+
+const (
+	Initiated   Status = "Initiated"
+	Ongoing     Status = "Ongoing"
+	UserDropped Status = "UserDropped"
+	Cancelled   Status = "Cancelled"
+)
+
+//STATUS = > INITIATED, ONGOING, USER_DROPPED, CANCELLED
+
+// Create policy
+// 1. add one more field in policy represents Beneficiary, SSN
+// 2  premium amount should be validated against the min and max amount.
+// 3  premium months should be validated against the min and max period.
+// 4. update the policy unique identifier to len(policies purchased by the user) + 1
+// 5. calculate the emi_amount using frequency * (premium / months)
+// 6. update the valid till by calculating the current time + months
+// 5. update status to initiated
+// 6. update total coverage to => premium * 0.3 =>
+// 7. to generate illustration, iterate a for loop till emi months
+//	 a. iterate using the freqency
+//for each frequency add illustration with following details
+//	1. amount - emi_amount
+//	2. date to pay - current date
+//	3. total_amount = number of installment * emi_amount
+//  4. paid_date -
+//	4. status - pending
+//
+//	1. amount - emi_amount
+//	2. date to pay - current date + frequency
+//	3. total_amount = number of installment * emi_amount
+//  4. paid_date -
+//	4. status - pending
+
+// pay first emi
+// /users/:email/policy/:1/pay [POST]
+// should bind request body
+// do validate request body
+// should bind URI request
+// do validate URI request
+// identify the emi(1st / 2nd)
+// check how many emi user paid
+// if it is first then allow user to pay first emi
+// if it is subsequent then check current date is within - 10 and + 10 days of date to pay
+// else throw error if user is trying to pay before 10 days of date to pay -(please wait till some date)
+// user is paying after 10 days of pay -> please pay installment_amount + (0.1 * number of delayed days)
+// update the status to paid
+// update the paid_date to current date
+
+//premium = 120000 // user provided be should be validated against hte min and max period.
+//months - 14     // user provided be should be validated against hte min and max period.
+//frequency = > 3 // user provided
+//emi_amount = > frequency * (120000 / 14) // calculated field => frequency * (premium / months)
+//valid till = > curernt dat + 14 months // calculated field
+
 type Policy struct {
-	ID            string    `json:"id" validate:"required"`
-	Name          string    `json:"name" validate:"required,min=4,max=20"`
-	Amount        float64   `json:"amount" validate:"required"`
-	TimePeriod    time.Time `json:"time_period" validate:"required"`
-	EMI           int       `json:"emi"`
-	Status        string    `json:"status"`
-	TotalCoverage int       `json:"total_coverage"`
+	UniqueIdentifier int         `json:"unique_identifier"`
+	ID               string      `json:"id" validate:"required"`
+	Name             string      `json:"name" validate:"required,min=4,max=20"`
+	ValidTill        time.Time   `json:"time_period" validate:"required"`
+	Months           int         `json:"months" validate:"required"`
+	EMIAmount        int         `json:"emi_amount" validate:"required"`
+	Status           Status      `json:"status" validate:"required"`
+	TotalCoverage    int         `json:"total_coverage" validate:"required"`
+	Premium          float64     `json:"premium" validate:"required"`
+	Frequency        int         `json:"frequency" validate:"required"`
+	Beneficiary      Beneficiary `json:"beneficiary" validate:"required"`
+}
+
+type Beneficiary struct {
+	Name string `json:"name" validate:"required,min=3,max=40"`
+	SSN  string `json:"SSN" validate:"required,ssn"`
 }
 
 type Premium struct {
